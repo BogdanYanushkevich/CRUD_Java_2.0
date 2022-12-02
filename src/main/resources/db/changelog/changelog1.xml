@@ -1,0 +1,100 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.17.xsd
+        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
+        changeLogId="f0c05dc9-d2f9-4e1f-aaa3-e8e53533c9a3">
+
+
+    <changeSet id="1" author="bogdan" runOnChange="true">
+        <createTable tableName="skills">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(20)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="status" type="varchar(20)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint
+                columnNames="name"
+                tableName="skills"/>
+    </changeSet>
+
+    <changeSet id="2" author="bogdan" runOnChange="true">
+        <createTable tableName="specialties">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(20)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="status" type="varchar(20)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint
+                columnNames="name"
+                tableName="specialties"/>
+    </changeSet>
+
+    <changeSet id="3" author="bogdan" runOnChange="true">
+        <createTable tableName="developers">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="first_name" type="varchar(20)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="last_name" type="varchar(20)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="specialty_id" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseColumnNames="specialty_id"
+                                 baseTableName="developers"
+                                 constraintName="fk_specialty_id_developer"
+                                 referencedColumnNames="id"
+                                 referencedTableName="specialties"
+                                 onDelete="CASCADE"
+                                 onUpdate="CASCADE"/>
+    </changeSet>
+
+
+    <changeSet id="4" author="bogdan" runOnChange="true">
+        <createTable tableName="skills_attribute">
+            <column name="developer_id" type="int" >
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="skill_id" type="int">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint
+                columnNames="developer_id, skill_id"
+                tableName="skills_attribute"/>
+        <addForeignKeyConstraint baseColumnNames="skill_id"
+                                 baseTableName="skills_attribute"
+                                 constraintName="fk_developer_skill_id"
+                                 referencedColumnNames="id"
+                                 referencedTableName="skills"
+                                 onDelete="CASCADE"
+                                 onUpdate="CASCADE"/>
+        <addForeignKeyConstraint baseColumnNames="developer_id"
+                                 baseTableName="skills_attribute"
+                                 constraintName="fk_developer_id_skill"
+                                 referencedColumnNames="id"
+                                 referencedTableName="developers"
+                                 onDelete="CASCADE"
+                                 onUpdate="CASCADE"/>
+    </changeSet>
+
+</databaseChangeLog>
