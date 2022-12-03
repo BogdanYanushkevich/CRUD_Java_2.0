@@ -27,7 +27,7 @@ class JdbcDeveloperRepositoryImpl implements DeveloperRepository
 ## ИНСТРУКЦИЯ ПО ЗАПУСКУ ПРИЛОЖЕНИЯ:
 
 1. Предварительно убедитесь, что на вашем компьютере установлены JVM, JRE, MySQL, JDBC, Maven, Liquibase, JUnit, Mockito.
-2. Скачать программу CRUDAPP.jar по ссылке https://github.com/BogdanYanushkevich/CRUD_Java_2.0/raw/master/CRUD_Java_2.0.jar                                                                                                                                                             
+2. Скачать программу CRUDAPP.jar по ссылке https://github.com/BogdanYanushkevich/CRUD_Java_2.0/raw/master/CRUD_Java_2.0.jar                                                                                                                                                          
 3. Вызвать командную строку сочетанием клавиш WIN+R.
 4. Прописать в командной строке: cd пробел и путь к папке со скачанной программой + Enter.
 5. Запустить программу, прописав в командной строке: java -jar CRUD_Java_2.0.jar
