@@ -5,7 +5,7 @@ import com.bogdan_yanushkevich.javacore.crud.model.Skill;
 import java.sql.SQLException;
 
 public interface SkillRepository extends GenericRepository<Skill, Long> {
-    public Skill create(String name);
+    public Skill create(Skill skill);
 
-    public Skill update(String name, long id);
+    public Skill update(Skill skill);
 }

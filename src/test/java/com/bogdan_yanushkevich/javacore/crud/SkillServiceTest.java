@@ -1,53 +1,63 @@
 package com.bogdan_yanushkevich.javacore.crud;
 
+
 import com.bogdan_yanushkevich.javacore.crud.model.Skill;
+import com.bogdan_yanushkevich.javacore.crud.repository.SkillRepository;
+import com.bogdan_yanushkevich.javacore.crud.service.SkillService;
 import com.bogdan_yanushkevich.javacore.crud.service.impl.SkillServiceImpl;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
+
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SkillServiceTest {
+    private final Long id = 2L;
+    private final SkillRepository skillRepository = Mockito.mock(SkillRepository.class);
+    private final SkillService skillService = new SkillServiceImpl(skillRepository);
 
-    private final Long id = 1L;
-    private final String name = "sql";
-    @Mock
-    private Skill skill;
 
-    @Mock
-    private List<Skill> skills;
-    @Mock
-    private SkillServiceImpl skillService;
+    private Skill getSkill() {
+        return new Skill();
+    }
+
+    private List<Skill> getSkills() {
+        List<Skill> skills = new ArrayList<>();
+        skills.add(getSkill());
+        return skills;
+    }
 
     @Test
     public void createTest() {
-        doReturn(skill).when(skillService).create(name);
-        assertEquals(skill, skillService.create(name));
+        doReturn(getSkill()).when(skillRepository).create(any(Skill.class));
+        assertEquals(getSkill(), skillService.create(getSkill()));
     }
 
     @Test
     public void readTest() {
-        doReturn(skill).when(skillService).read(id);
-        assertEquals(skill, skillService.read(id));
+        doReturn(getSkill()).when(skillRepository).read(anyLong());
+        assertEquals(getSkill(), skillService.read(id));
     }
 
     @Test
     public void updateTest() {
-        doReturn(skill).when(skillService).update(name, id);
-        assertEquals(skill, skillService.update(name, id));
+        doReturn(getSkill()).when(skillRepository).update(any(Skill.class));
+        assertEquals(getSkill(), skillService.update(getSkill()));
     }
 
 
     @Test
     public void getAllTest() {
-        doReturn(skills).when(skillService).getALl();
-        assertEquals(skills, skillService.getALl());
+        doReturn(getSkills()).when(skillRepository).getALl();
+        assertEquals(getSkills(), skillService.getALl());
     }
 }
-

@@ -8,7 +8,7 @@ public interface GenericRepository<T, ID> {
 
     T read(Long ID);
 
-    boolean delete(ID id);
+    void delete(ID id);
 
     List<T> getALl();
 

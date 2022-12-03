@@ -10,66 +10,73 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.bogdan_yanushkevich.javacore.crud.repository.jdbcImpl.CommonSQLQueries.*;
-import static com.bogdan_yanushkevich.javacore.crud.repository.jdbcImpl.CommonSQLQueries.SKILL_GET_MAX;
 
 
 public class JdbcSkillRepositoryImpl implements SkillRepository {
 
-    private final Statement statement = JdbcConnection.getStatement();
-
-
     public JdbcSkillRepositoryImpl() {
     }
 
-    public Skill create(String name) {
-        Long id = null;
-        try {
-            statement.executeUpdate(String.format(SKILL_CREATE, name, "ACTIVE"));
-            id = getCreatedSkillId();
+    public Skill create(Skill skill) {
+
+        try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatementWithKeys(SKILL_CREATE)) {
+            preparedStatement.setString(1, skill.getName());
+            preparedStatement.setString(2, Status.ACTIVE.toString());
+            preparedStatement.executeUpdate();
+            ResultSet resultSet = preparedStatement.getGeneratedKeys();
+            skill.setId(getId(resultSet));
+            skill.setStatus(Status.ACTIVE);
+            return skill;
         } catch (SQLIntegrityConstraintViolationException ex) {
             return null;
         } catch (SQLException e) {
             e.printStackTrace();
+            return null;
         }
-        return read(id);
     }
 
     @Override
     public Skill read(Long id) {
-        return getALl().stream()
-                .filter(skill -> id.equals(skill.getId()))
-                .findFirst()
-                .orElse(null);
+        try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatement(SKILL_GET_BY_ID)) {
+            preparedStatement.setLong(1, id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            return buildSkillObject(resultSet);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @Override
-    public Skill update(String name, long id) {
-        try {
-            statement.executeUpdate(String.format(SKILL_UPDATE, name, id));
+    public Skill update(Skill skill) {
+        try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatement(SKILL_UPDATE)) {
+            preparedStatement.setString(1, skill.getName());
+            preparedStatement.setLong(2, skill.getId());
+            preparedStatement.executeUpdate();
+            return skill;
         } catch (SQLException e) {
             e.printStackTrace();
+            return null;
         }
-        return read(id);
     }
 
     @Override
-    public boolean delete(Long id) {
-        boolean result = false;
-        try {
-            if (statement.executeUpdate(String.format(SKILL_DELETE, "DELETED", id)) > 0) {
-                result = true;
-            }
+    public void delete(Long id) {
+        try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatement(SKILL_DELETE)) {
+            preparedStatement.setString(1, Status.DELETED.toString());
+            preparedStatement.setLong(2, id);
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return result;
     }
 
     @Override
     public List<Skill> getALl() {
         List<Skill> skills = new ArrayList<>();
 
-        try (ResultSet resultSet = statement.executeQuery(SKILL_GET_ALL)) {
+        try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatement(SKILL_GET_ALL)) {
+            ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 Skill skill = new Skill();
                 skill.setId(resultSet.getLong("id"));
@@ -77,18 +84,33 @@ public class JdbcSkillRepositoryImpl implements SkillRepository {
                 skill.setStatus(Status.valueOf(resultSet.getString("status")));
                 skills.add(skill);
             }
+            return skills;
         } catch (SQLException e) {
             e.printStackTrace();
+            return null;
         }
-        return skills;
     }
 
-
-    private Long getCreatedSkillId() {
-        Long id = null;
-        try (ResultSet resultSet = statement.executeQuery(SKILL_GET_MAX)) {
+    private Skill buildSkillObject(ResultSet resultSet) {
+        Skill skill = new Skill();
+        try {
             if (resultSet.next()) {
-                id = resultSet.getLong("id");
+                skill.setId(resultSet.getLong("id"));
+                skill.setName(resultSet.getString("name"));
+                skill.setStatus(Status.valueOf(resultSet.getString("status")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return skill;
+    }
+
+    private Long getId(ResultSet resultSet) {
+        Long id = null;
+        try {
+            if (resultSet != null && resultSet.next()) {
+                id = resultSet.getLong(1);
             }
         } catch (SQLException e) {
             e.printStackTrace();

@@ -7,17 +7,16 @@ import java.util.Properties;
 
 public class JdbcConnection {
 
-    private static Connection connection;
 
-    public static void getConnection() {
+    public static Connection getConnection() {
         Properties properties = new Properties();
+        Connection connection = null;
 
         try {
             properties.load(new FileInputStream("src/main/resources/app.properties"));
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if (connection == null) {
             try {
                 Class.forName(properties.getProperty("driver"));
             } catch (ClassNotFoundException e) {
@@ -30,22 +29,33 @@ public class JdbcConnection {
             } catch (SQLException e) {
                 e.printStackTrace();
             }
-        }
+        return connection;
     }
 
-    public static synchronized Statement getStatement() {
-        getConnection();
-        Statement statement = null;
+    public static synchronized PreparedStatement getPreparedStatement(String SqlQuery) {
+
+        PreparedStatement preparedStatement = null;
         try {
-            connection.createStatement(
-                    ResultSet.TYPE_SCROLL_SENSITIVE,
-                    ResultSet.CONCUR_UPDATABLE
-            );
-            statement = connection.createStatement();
+            preparedStatement = getConnection().prepareStatement(
+                    SqlQuery, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return statement;
+        return preparedStatement;
     }
+    public static synchronized PreparedStatement getPreparedStatementWithKeys(String SqlQuery) {
+
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = getConnection().prepareStatement(
+                    SqlQuery, Statement.RETURN_GENERATED_KEYS);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return preparedStatement;
+    }
+
 }
 

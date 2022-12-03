@@ -8,9 +8,10 @@ import com.bogdan_yanushkevich.javacore.crud.repository.DeveloperRepository;
 
 import static com.bogdan_yanushkevich.javacore.crud.repository.jdbcImpl.CommonSQLQueries.*;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,87 +22,110 @@ public class JdbcDeveloperRepositoryImpl implements DeveloperRepository {
 
 
     @Override
-    public Developer create(String firstname, String lastname, List<Skill> skills, Specialty specialty) {
-        Long id;
-        try (Statement statement = JdbcConnection.getStatement()) {
-            statement.executeUpdate(String.format(DEVELOPER_CREATE, firstname, lastname, specialty.getId(), "ACTIVE"));
-            id = getCreatedDeveloperId();
-            setDependencies(skills, id);
+    public Developer create(Developer developer) {
+        try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatementWithKeys(DEVELOPER_CREATE)) {
+            preparedStatement.setString(1, developer.getName());
+            preparedStatement.setString(2, developer.getLastName());
+            preparedStatement.setLong(3, developer.getSpecialty().getId());
+            preparedStatement.setString(4, Status.ACTIVE.toString());
+            preparedStatement.executeUpdate();
+            ResultSet resultSet = preparedStatement.getGeneratedKeys();
+            developer.setId(getId(resultSet));
+            developer.setStatus(Status.ACTIVE);
+            setDependencies(developer.getSkills(), developer.getId());
+            return developer;
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
         }
-        return read(id);
     }
 
 
     @Override
     public Developer read(Long id) {
-        return getALl().stream()
-                .filter(d -> d.getId().equals(id))
-                .findFirst()
-                .orElse(null);
-    }
-
-    @Override
-    public Developer update(Long id, String firstname, String lastname, List<Skill> skills, Specialty specialty) {
-        try (Statement statement = JdbcConnection.getStatement()) {
-            statement.executeUpdate(String.format(DEVELOPER_UPDATE, firstname, lastname, specialty.getId(), id));
-            statement.executeUpdate(String.format(DEVELOPER_SKILL_DELETE, id));
-            setDependencies(skills, id);
+        try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatement(DEVELOPER_GET_BY_ID)) {
+            preparedStatement.setLong(1, id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                return buildDeveloperObject(resultSet);
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
         }
-        return read(id);
+        return null;
     }
 
-    public boolean delete(Long id) {
-        try (Statement statement = JdbcConnection.getStatement()) {
-            statement.executeUpdate(String.format(DEVELOPER_DELETE, "DELETED", id));
+    @Override
+    public Developer update(Developer developer) {
+        try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatement(DEVELOPER_UPDATE)) {
+            preparedStatement.setString(1, developer.getName());
+            preparedStatement.setString(2, developer.getLastName());
+            preparedStatement.setLong(3, developer.getSpecialty().getId());
+            preparedStatement.setLong(4, developer.getId());
+            preparedStatement.executeUpdate();
+            deleteDependencies(developer.getId());
+            setDependencies(developer.getSkills(), developer.getId());
+            return developer;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public void delete(Long id) {
+        try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatement(DEVELOPER_DELETE)) {
+            preparedStatement.setString(1, Status.DELETED.toString());
+            preparedStatement.setLong(2, id);
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return true;
     }
 
     @Override
     public List<Developer> getALl() {
         List<Developer> developers = new ArrayList<>();
-        try (Statement statement = JdbcConnection.getStatement()) {
-            ResultSet resultSet = statement.executeQuery(DEVELOPER_GET_ALL);
+        Developer developer;
+        try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatement(DEVELOPER_GET_ALL)) {
+            ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
-                Developer developer = buildDeveloperObject(resultSet);
+                developer = buildDeveloperObject(resultSet);
                 developers.add(developer);
             }
+            return developers;
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
         }
-        return developers;
     }
 
     private List<Skill> getDeveloperSkillsList(long id) {
         List<Skill> skills = new ArrayList<>();
-        try (Statement statement = JdbcConnection.getStatement()) {
-            ResultSet resultSet1 = statement.executeQuery(String.format(DEVELOPER_GET_SKILLS, id));
-            while (resultSet1.next()) {
-                Skill skill = buildSkillObject(resultSet1);
+        Skill skill;
+        try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatement(DEVELOPER_GET_SKILLS)) {
+            preparedStatement.setLong(1, id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                skill = buildSkillObject(resultSet);
                 skills.add(skill);
             }
-            resultSet1.close();
+            return skills;
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
         }
-        return skills;
     }
 
 
     private void setDependencies(List<Skill> skillList, Long developerId) {
         for (Skill s : skillList) {
-            try (Statement statement = JdbcConnection.getStatement()) {
-                statement.executeUpdate(String.format(DEVELOPER_ADD_SKILLS, developerId, s.getId()));
+            try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatement(DEVELOPER_ADD_SKILLS)) {
+                preparedStatement.setLong(1, developerId);
+                preparedStatement.setLong(2, s.getId());
+                preparedStatement.executeUpdate();
+            } catch (SQLIntegrityConstraintViolationException ex) {
+                return;
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -110,8 +134,9 @@ public class JdbcDeveloperRepositoryImpl implements DeveloperRepository {
 
     private Specialty getSpecialty(long id) {
         Specialty specialty = new Specialty();
-        try (Statement statement = JdbcConnection.getStatement()) {
-            ResultSet resultSet = statement.executeQuery(String.format(SPECIALTY_GET_BY_ID, id));
+        try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatement(SPECIALTY_GET_BY_ID)) {
+            preparedStatement.setLong(1, id);
+            ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
                 specialty.setId(resultSet.getLong("id"));
                 specialty.setName(resultSet.getString("name"));
@@ -124,19 +149,6 @@ public class JdbcDeveloperRepositoryImpl implements DeveloperRepository {
         }
 
         return specialty;
-    }
-
-    private Long getCreatedDeveloperId() {
-        Long id = null;
-        try (Statement statement = JdbcConnection.getStatement()) {
-            ResultSet resultSet = statement.executeQuery(DEVELOPER_GET_MAX);
-            if (resultSet.next()) {
-                id = resultSet.getLong("id");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return id;
     }
 
     private Developer buildDeveloperObject(ResultSet resultSet) {
@@ -166,5 +178,26 @@ public class JdbcDeveloperRepositoryImpl implements DeveloperRepository {
             return null;
         }
         return skill;
+    }
+
+    private void deleteDependencies(Long id) {
+        try (PreparedStatement preparedStatement = JdbcConnection.getPreparedStatement(DEVELOPER_SKILL_DELETE)) {
+            preparedStatement.setLong(1, id);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Long getId(ResultSet resultSet) {
+        Long id = null;
+        try {
+            if (resultSet != null && resultSet.next()) {
+                id = resultSet.getLong(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return id;
     }
 }

@@ -7,7 +7,7 @@ import com.bogdan_yanushkevich.javacore.crud.model.Specialty;
 import java.util.List;
 
 public interface DeveloperService extends GenericService<Developer, Long> {
-    Developer create(String firstname, String lastname, List<Skill> skills, Specialty specialty);
+    Developer create(Developer developer);
 
-    Developer update(Long id, String firstname, String lastname, List<Skill> skills, Specialty specialty);
+    Developer update(Developer developer);
 }

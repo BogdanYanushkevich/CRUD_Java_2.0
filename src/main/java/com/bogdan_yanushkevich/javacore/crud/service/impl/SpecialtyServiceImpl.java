@@ -13,9 +13,12 @@ public class SpecialtyServiceImpl implements SpecialtyService {
     public SpecialtyServiceImpl() {
         this.sr = new JdbcSpecialtyRepositoryImpl();
     }
+    public SpecialtyServiceImpl(SpecialtyRepository specialtyRepository) {
+        this.sr = specialtyRepository;
+    }
 
-    public Specialty create(String name){
-        return sr.create(name);
+    public Specialty create(Specialty specialty){
+        return sr.create(specialty);
     }
 
     @Override
@@ -24,8 +27,8 @@ public class SpecialtyServiceImpl implements SpecialtyService {
     }
 
     @Override
-    public Specialty update(String name, long id){
-        return sr.update(name, id);
+    public Specialty update(Specialty specialty){
+        return sr.update(specialty);
     }
 
     @Override
